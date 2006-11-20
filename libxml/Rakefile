@@ -1,3 +1,5 @@
+fail "\n\nThis branch has now been merged to HEAD. Development will continue there.\n\n"
+
 require 'net/ftp'
 require 'rake/clean'
 require 'rake/testtask'

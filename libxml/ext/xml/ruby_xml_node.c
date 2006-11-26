@@ -707,12 +707,12 @@ void ruby_xml_node_free(ruby_xml_node *rxn) {
   if (rxn->node != NULL &&            // got a node?
       rxn->node->parent == NULL &&    // unparented (otherwise, it gets freed with parent)
       rxn->node->doc == NULL) {       // No document? (otherwise, freed with doc)
-    if ((int)rxn->node->_private <= 1) {
+    if (rxn->node->_private <= (void*)1) {
       // is null or last reference, 
       xmlFreeNode(rxn->node);  
     } else {
       // other pointers remain
-      rxn->node->_private--;    
+      rxn->node->_private--;
     }    
   }
 

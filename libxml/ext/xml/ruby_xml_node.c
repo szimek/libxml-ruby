@@ -2230,7 +2230,7 @@ ruby_xml_node_xinclude_start_q(VALUE self) {
  * Create a copy of this node.
  */
 VALUE
-ruby_xml_node_copy(VALUE self, VALUE deep) {   /* MUFF */
+ruby_xml_node_copy(VALUE self, VALUE deep) {
   ruby_xml_node *rxn;
   xmlNode *copy;
   
@@ -2254,9 +2254,9 @@ ruby_xml_node_copy(VALUE self, VALUE deep) {   /* MUFF */
 void
 ruby_init_xml_node(void) {
   cXMLNode = rb_define_class_under(mXML, "Node", rb_cObject);
-  eXMLNodeSetNamespace = rb_define_class_under(cXMLNode, "SetNamespace", rb_eException);
-  eXMLNodeFailedModify = rb_define_class_under(cXMLNode, "FailedModify", rb_eException);
-  eXMLNodeUnknownType = rb_define_class_under(cXMLNode, "UnknownType", rb_eException);
+  eXMLNodeSetNamespace = rb_define_class_under(cXMLNode, "SetNamespace", eXMLError);
+  eXMLNodeFailedModify = rb_define_class_under(cXMLNode, "FailedModify", eXMLError);
+  eXMLNodeUnknownType = rb_define_class_under(cXMLNode, "UnknownType", eXMLError);
 
   rb_define_const(cXMLNode, "SPACE_DEFAULT", INT2NUM(0));
   rb_define_const(cXMLNode, "SPACE_PRESERVE", INT2NUM(1));

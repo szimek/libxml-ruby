@@ -1907,9 +1907,12 @@ ruby_xml_node_property_set(VALUE self, VALUE key, VALUE val) {
 
 /*
  * call-seq:
- *    node.properties => attributes
+ *    node.properties => attributes or nil
  * 
- * Returns the +XML::Attr+ for this node. 
+ * Returns the first +XML::Attr+ for this node. Use the
+ * +name+ and +value+ methods to obtain the attribute's
+ * data, and the +prev+ and +next+ methods to 
+ * navigate the property list.
  */
 VALUE
 ruby_xml_node_properties_get(VALUE self) {
@@ -1920,7 +1923,12 @@ ruby_xml_node_properties_get(VALUE self) {
 
   if (node->node->type == XML_ELEMENT_NODE) {
     attr = node->node->properties;
-    return(ruby_xml_attr_new2(cXMLAttr, node->xd, attr));
+    
+  	if (attr == NULL) {
+	    return(Qnil);
+    } else {
+      return(ruby_xml_attr_new2(cXMLAttr, node->xd, attr));
+    }
   } else {
     return(Qnil);
   }

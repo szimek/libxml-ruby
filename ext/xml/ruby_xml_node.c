@@ -309,16 +309,12 @@ ruby_xml_node_child_q(VALUE self) {
     return(Qtrue);
 }
 
-
-// TODO Fixes below should be applied to sibling, prev, etc ?
 /*
- * call-seq:
- *    node.child = node
- * 
- * Set a child node for this node.
+ * underlying for child_set and child_add, difference being
+ * former raises on implicit copy, latter does not.
  */
 VALUE
-ruby_xml_node_child_set(VALUE self, VALUE rnode) {
+ruby_xml_node_child_set_aux(VALUE self, VALUE rnode, int do_raise) {
   ruby_xml_node *cnode, *pnode;
   xmlNodePtr chld, ret;
   int copied=0;
@@ -334,7 +330,8 @@ ruby_xml_node_child_set(VALUE self, VALUE rnode) {
   if ( chld->parent != NULL || chld->doc != NULL ) {
     chld=xmlCopyNode(chld,1);
     copied=1;
-    rb_warning("implicit copy of %s",chld->name);
+    if ( do_raise == 1 )
+      rb_raise(rb_eRuntimeError, "implicit copy not legal for child= or <<");
   }
 
   ret = xmlAddChild(pnode->node, chld);
@@ -346,6 +343,28 @@ ruby_xml_node_child_set(VALUE self, VALUE rnode) {
     
   // wish I could return a new wrapped chld, but ruby only returns the rhs
   return ruby_xml_node2_wrap(cXMLNode,chld);
+}
+
+/*
+ * call-seq:
+ *    node.child = node
+ * 
+ * Set a child node for this node. Also called for <<
+ */
+VALUE
+ruby_xml_node_child_set(VALUE self, VALUE rnode) {
+  return ruby_xml_node_child_set_aux(self,rnode,1);
+}
+
+/*
+ * call-seq:
+ *    node.child_add(node)
+ * 
+ * Set a child node for this node.
+ */
+VALUE
+ruby_xml_node_child_add(VALUE self, VALUE rnode) {
+  return ruby_xml_node_child_set_aux(self,rnode,0);
 }
 
 /*
@@ -2263,7 +2282,7 @@ ruby_init_xml_node(void) {
   rb_define_method(cXMLNode, "child", ruby_xml_node_child_get, 0);
   rb_define_method(cXMLNode, "child?", ruby_xml_node_child_q, 0);
   rb_define_method(cXMLNode, "child=", ruby_xml_node_child_set, 1);
-  rb_define_method(cXMLNode, "child_add", ruby_xml_node_child_set, 1);
+  rb_define_method(cXMLNode, "child_add", ruby_xml_node_child_add, 1);
   rb_define_method(cXMLNode, "children", ruby_xml_node_child_get, 0);
   rb_define_method(cXMLNode, "children?", ruby_xml_node_child_q, 0);
   rb_define_method(cXMLNode, "content", ruby_xml_node_content_get, 0);

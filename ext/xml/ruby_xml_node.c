@@ -1253,14 +1253,18 @@ ruby_xml_node2_free(ruby_xml_node *rxn) {
 
   if (rxn->node->parent == NULL && rxn->node->doc == NULL ) {
 #ifdef NODE_DEBUG
-    fprintf(stderr,"free rxn=0x%x xn=0x%x o=0x%x\n",(long)rxn,(long)rxn->node,(long)rxn->node->_private);
+    fprintf(stderr,"ruby_xml_node2_free freed rxn=0x%x xn=0x%x o=0x%x\n",(long)rxn,(long)rxn->node,(long)rxn->node->_private);
 #endif
     rxn->node->_private=NULL;
     xmlFreeNode(rxn->node);
+  } else {
+#ifdef NODE_DEBUG
+    fprintf(stderr,"ruby_xml_node2_free blanked %0x ",(long)rxn);
+#endif
+    rxn->node->_private=NULL;
   }
 
   rxn->node=NULL;
-  //  fprintf(stderr,"%0x ",(long)rxn);
   free(rxn);
 }
 
@@ -1308,8 +1312,14 @@ ruby_xml_node2_wrap(VALUE class, xmlNodePtr xnode)
   ruby_xml_node *rxn;
 
   // This node is already wrapped
-  if (xnode->_private != NULL)
+  if (xnode->_private != NULL) {
+#ifdef NODE_DEBUG
+    fprintf(stderr,"pre-wrap node 0x%x\n",xnode->_private);
+    Data_Get_Struct((VALUE)xnode->_private,ruby_xml_node,rxn);
+    fprintf(stderr,"pre-wrap rxn=0x%x xn=0x%x o=0x%x\n",(long)rxn,(long)xnode,(long)xnode->_private);
+#endif
     return (VALUE)xnode->_private;
+  }
 
   obj=Data_Make_Struct(class,ruby_xml_node,ruby_xml_node2_mark,
 		       ruby_xml_node2_free,rxn);

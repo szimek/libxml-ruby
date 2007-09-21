@@ -40,30 +40,6 @@ ruby_xml_xpath_debug(VALUE self) {
 #endif
 }
 
-// TODO Maybe we should support [] or some other kind of access if poss.
-
-/*
- * call-seq:
- *    xpath.each { |node| ... } => self
- * 
- * Call the supplied block for each matching node.
- */
-VALUE
-ruby_xml_xpath_each(VALUE self) {
-  ruby_xml_xpath *rxxp;
-  VALUE rxnset;
-
-  Data_Get_Struct(self, ruby_xml_xpath, rxxp);
-
-  if (rxxp->xpop == NULL || rxxp->xpop->type != XPATH_NODESET)
-    return(Qnil);
-
-  rxnset = ruby_xml_node_set_new(cXMLNodeSet, rxxp->xd, self,
-				 rxxp->xpop->nodesetval);
-  ruby_xml_node_set_each(rxnset);
-  return(rxnset);
-}
-
 ///////////////////////////////////////////////////
 // TODO xpath_find is throwing TypeError:
 //
@@ -98,6 +74,7 @@ ruby_xml_xpath_find(int argc, VALUE *argv, VALUE class) {
   ruby_xml_xpath_context *rxxpc;
   ruby_xml_ns *rxns;
   VALUE rnode, rprefix, ruri, xxpc, xpath, xpath_expr;
+  VALUE rxpop;
   char *cp;
   long i;
 
@@ -129,10 +106,9 @@ ruby_xml_xpath_find(int argc, VALUE *argv, VALUE class) {
     return(Qnil);
   Data_Get_Struct(xxpc, ruby_xml_xpath_context, rxxpc);
 
-  xpath = ruby_xml_xpath_new(cXMLXPath, rnode, xxpc, NULL);
-  Data_Get_Struct(xpath, ruby_xml_xpath, rxxp);
-
   rxxpc->ctxt->node = node->node;
+
+  // XXX is setting ->namespaces used?
   if (node->node->type == XML_DOCUMENT_NODE) {
     rxxpc->ctxt->namespaces = xmlGetNsList(node->node->doc,
 					   xmlDocGetRootElement(node->node->doc));
@@ -210,25 +186,20 @@ ruby_xml_xpath_find(int argc, VALUE *argv, VALUE class) {
   comp = xmlXPathCompile((xmlChar*)StringValuePtr(xpath_expr));
 
   if (comp == NULL) {
-    xmlXPathFreeCompExpr(comp);
-    rb_raise(eXMLXPathInvalidPath, "Invalid XPath expression");
+    rb_raise(eXMLXPathInvalidPath,
+	     "Invalid XPath expression (expr does not compile)");
   }
-  rxxp->xpop = xmlXPathCompiledEval(comp, rxxpc->ctxt);
+  rxpop = ruby_xml_xpath_object_wrap(xmlXPathCompiledEval(comp, rxxpc->ctxt));
   xmlXPathFreeCompExpr(comp);
 
   if (rxxpc->ctxt->namespaces != NULL)
     xmlFree(rxxpc->ctxt->namespaces);
 
-  if (rxxp->xpop == NULL)
+  if (rxpop == Qnil)
     rb_raise(eXMLXPathInvalidPath,
 	     "Invalid XPath expression for this document");
 
-  if (rxxp->xpop->type != XPATH_NODESET)
-    return(Qnil);
-
-  return(ruby_xml_node_set_new2(ruby_xml_document_wrap(cXMLDocument,node->node->doc),
-				xpath,
-				rxxp->xpop->nodesetval));
+  return rxpop;
 #else
   rb_warn("libxml was compiled without XPath support");
   return(Qfalse);
@@ -239,93 +210,6 @@ ruby_xml_xpath_find(int argc, VALUE *argv, VALUE class) {
 VALUE
 ruby_xml_xpath_find2(int argc, VALUE *argv) {
   return(ruby_xml_xpath_find(argc, argv, cXMLXPath));
-}
-
-
-void
-ruby_xml_xpath_free(ruby_xml_xpath *rxxp) {
-  if (rxxp->xpop != NULL) {
-    xmlXPathFreeObject(rxxp->xpop);
-    rxxp->xpop = NULL;
-  }
-
-  free(rxxp);
-}
-
-
-void
-ruby_xml_xpath_mark(ruby_xml_xpath *rxxp) {
-  if (rxxp == NULL) return;
-  if (!NIL_P(rxxp->ctxt)) rb_gc_mark(rxxp->ctxt);
-  if (!NIL_P(rxxp->xd)) rb_gc_mark(rxxp->xd);
-}
-
-
-VALUE
-ruby_xml_xpath_new(VALUE class, VALUE xd, VALUE ctxt,
-			 xmlXPathObjectPtr xpop) {
-  ruby_xml_xpath *rxxp;
-
-  rxxp = ALLOC(ruby_xml_xpath);
-  rxxp->ctxt = ctxt;
-  rxxp->xd = xd;
-  rxxp->xpop = xpop;
-  return(Data_Wrap_Struct(class, ruby_xml_xpath_mark,
-			  ruby_xml_xpath_free, rxxp));
-}
-
-
-/*
- * call-seq:
- *    xpath.set => nodeset
- * 
- * Obtain an XML::Node::Set with nodes matching this xpath.
- */
-VALUE
-ruby_xml_xpath_set(VALUE self) {
-  ruby_xml_xpath *rxxp;
-  Data_Get_Struct(self, ruby_xml_xpath, rxxp);
-
-  if (rxxp->xpop == NULL || rxxp->xpop->type != XPATH_NODESET)
-    return(Qnil);
-
-  return(ruby_xml_node_set_new(cXMLNodeSet, rxxp->xd, self,
-			       rxxp->xpop->nodesetval));
-}
-
-
-/*
- * call-seq:
- *    xpath.set_type => num
- * 
- * Obtains the type identifier of this xpath
- * set.
- */
-VALUE
-ruby_xml_xpath_set_type(VALUE self) {
-  ruby_xml_xpath *rxxp;
-  Data_Get_Struct(self, ruby_xml_xpath, rxxp);
-
-  return(INT2FIX(rxxp->xpop->type));
-}
-
-// TODO maybe 'string' should alias as 'to_s'?
-
-/*
- * call-seq:
- *    xpath.string => "xpath" 
- * 
- * Obtain a string representation of this xpath.
- */
-VALUE
-ruby_xml_xpath_string(VALUE self) {
-  ruby_xml_xpath *rxxp;
-  Data_Get_Struct(self, ruby_xml_xpath, rxxp);
-
-  if (rxxp->xpop->stringval == NULL)
-    return(Qnil);
-  else
-    return(rb_str_new2((const char*)rxxp->xpop->stringval));
 }
 
 // Rdoc needs to know 
@@ -354,10 +238,8 @@ ruby_init_xml_xpath(void) {
   rb_define_singleton_method(cXMLXPath, "find", ruby_xml_xpath_find, 2);
 
   rb_define_method(cXMLXPath, "debug", ruby_xml_xpath_debug, 0);
-  rb_define_method(cXMLXPath, "each", ruby_xml_xpath_each, 0);
-  rb_define_method(cXMLXPath, "set", ruby_xml_xpath_set, 0);
-  rb_define_method(cXMLXPath, "set_type", ruby_xml_xpath_set_type, 0);
-  rb_define_method(cXMLXPath, "string", ruby_xml_xpath_string, 0);
+
+  ruby_init_xml_xpath_object();
 }
 
 #endif /* ifdef LIBXML_XPATH_ENABLED */

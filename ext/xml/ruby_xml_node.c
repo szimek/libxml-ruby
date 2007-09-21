@@ -659,7 +659,7 @@ ruby_xml_node_find(int argc, VALUE *argv, VALUE self) {
   for (i = 0; i<argc; i++)
     vargv[i + 1] = argv[i];
 
-  return(ruby_xml_xpath_find2(vargc, vargv));
+  return(ruby_xml_node_set_new2(ruby_xml_xpath_find2(vargc, vargv)));
 }
 
 /*
@@ -671,23 +671,7 @@ ruby_xml_node_find(int argc, VALUE *argv, VALUE self) {
  */
 VALUE
 ruby_xml_node_find_first(int argc, VALUE *argv, VALUE self) {
-  VALUE ns = ruby_xml_node_find(argc, argv, self);
-  ruby_xml_node_set *rxnset;
-  VALUE nodeobj;
-
-  Data_Get_Struct(ns, ruby_xml_node_set, rxnset);
-  if (rxnset->node_set == NULL || rxnset->node_set->nodeNr < 1)
-    return(Qnil);
-
-  switch(rxnset->node_set->nodeTab[0]->type) {
-    case XML_ATTRIBUTE_NODE:
-      nodeobj = ruby_xml_attr_wrap(cXMLAttr, (xmlAttrPtr)rxnset->node_set->nodeTab[0]);
-      break;
-    default:
-      nodeobj = ruby_xml_node2_wrap(cXMLNode, rxnset->node_set->nodeTab[0]);
-  }
-
-  return(nodeobj);
+  return ruby_xml_node_set_first(ruby_xml_node_find(argc, argv, self));
 }
 
 

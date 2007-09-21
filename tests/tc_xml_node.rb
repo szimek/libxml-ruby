@@ -12,9 +12,10 @@ class TC_XML_Node < Test::Unit::TestCase
     @root = doc.root
     assert_instance_of(XML::Node, @root)
     set = doc.find('/ruby_array/fixnum')
-    assert_instance_of(XML::Node::Set, set)
-    xpt = set.xpath
-    assert_instance_of(XML::XPath, xpt)
+    assert_instance_of(XML::XPath::Object, set)
+    assert_raise(NoMethodError) {
+      xpt = set.xpath
+    }
     @nodes = []
     set.each do |n|
       @nodes.push(n)

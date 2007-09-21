@@ -401,7 +401,7 @@ ruby_xml_document_find(int argc, VALUE *argv, VALUE self) {
 
   vargc = argc + 1;
   vargv = ALLOC_N(VALUE, vargc + 1);
-  vargv[0] = ruby_xml_document_root_get(self);
+  vargv[0]=self;
   for (i = 0; i<argc; i++)
     vargv[i + 1] = argv[i];
 

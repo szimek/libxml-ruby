@@ -72,6 +72,7 @@ ruby_xml_xpath_find(int argc, VALUE *argv, VALUE class) {
   ruby_xml_node *node;
   ruby_xml_xpath *rxxp;
   ruby_xml_xpath_context *rxxpc;
+  ruby_xml_document_t *rdocp;
   ruby_xml_ns *rxns;
   VALUE rnode, rprefix, ruri, xxpc, xpath, xpath_expr;
   VALUE rxpop;
@@ -92,20 +93,27 @@ ruby_xml_xpath_find(int argc, VALUE *argv, VALUE class) {
     /* Intentionally fall through, we deal with the last arg below
      * after the XPathContext object has been setup */
   case 2:
-    rnode = argv[0];
+    if (rb_obj_is_kind_of(argv[0], cXMLDocument) == Qtrue) {
+      xxpc = ruby_xml_xpath_context_new3(argv[0]);
+      Data_Get_Struct(argv[0], ruby_xml_document_t, rdocp);
+      rnode=ruby_xml_node2_wrap(cXMLNode,rdocp->doc->children);
+      Data_Get_Struct(rnode, ruby_xml_node, node);
+    } else if ( rb_obj_is_kind_of(argv[0], cXMLNode) == Qtrue) {
+      xxpc = ruby_xml_xpath_context_new4(argv[0]);
+      Data_Get_Struct(argv[0], ruby_xml_node, node);
+    } else
+      rb_raise(rb_eTypeError, "arg 1 must be XML::Document or XML::Node within a document");
+      
     xpath_expr = argv[1];
     break;
   default:
     rb_raise(rb_eArgError, "wrong number of arguments (1 or 2)");
   }
 
-  Data_Get_Struct(rnode, ruby_xml_node, node);
-
-  xxpc = ruby_xml_xpath_context_new4(rnode);
   if (NIL_P(xxpc))
     return(Qnil);
-  Data_Get_Struct(xxpc, ruby_xml_xpath_context, rxxpc);
 
+  Data_Get_Struct(xxpc,ruby_xml_xpath_context,rxxpc);
   rxxpc->ctxt->node = node->node;
 
   // XXX is setting ->namespaces used?

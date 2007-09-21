@@ -81,6 +81,9 @@ ruby_xml_xpath_context_new4(VALUE rnode) {
   ruby_xml_node *node;
 
   Data_Get_Struct(rnode, ruby_xml_node, node);
+  if (node->node->doc == NULL)
+    rb_raise(rb_eTypeError,"Supplied node must be part of a document");
+
   return ruby_xml_xpath_context_new3(ruby_xml_document_wrap(cXMLDocument,node->node->doc));
 }
 

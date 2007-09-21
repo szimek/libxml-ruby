@@ -96,13 +96,19 @@ ruby_xml_xpath_find(int argc, VALUE *argv, VALUE class) {
     if (rb_obj_is_kind_of(argv[0], cXMLDocument) == Qtrue) {
       xxpc = ruby_xml_xpath_context_new3(argv[0]);
       Data_Get_Struct(argv[0], ruby_xml_document_t, rdocp);
-      rnode=ruby_xml_node2_wrap(cXMLNode,rdocp->doc->children);
+#ifdef DEBUG
+      fprintf(stderr,"rdocp=0x%x root=0x%x\n",rdocp,xmlDocGetRootElement(rdocp->doc));
+#endif
+      rnode=ruby_xml_node2_wrap(cXMLNode,xmlDocGetRootElement(rdocp->doc));
+#ifdef DEBUG
+      fprintf(stderr,"rnode 0x%x 0x%x\n",rnode,xmlDocGetRootElement(rdocp->doc)->_private);
+#endif
       Data_Get_Struct(rnode, ruby_xml_node, node);
     } else if ( rb_obj_is_kind_of(argv[0], cXMLNode) == Qtrue) {
       xxpc = ruby_xml_xpath_context_new4(argv[0]);
       Data_Get_Struct(argv[0], ruby_xml_node, node);
     } else
-      rb_raise(rb_eTypeError, "arg 1 must be XML::Document or XML::Node within a document");
+      rb_raise(rb_eTypeError, "arg 1 must be XML::Document or XML::Node within a document %s", rb_obj_as_string(argv[0]));
       
     xpath_expr = argv[1];
     break;

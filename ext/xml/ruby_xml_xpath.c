@@ -71,7 +71,7 @@ ruby_xml_xpath_find(int argc, VALUE *argv, VALUE class) {
   xmlXPathCompExprPtr comp;
   ruby_xml_node *node;
   ruby_xml_xpath *rxxp;
-  ruby_xml_xpath_context *rxxpc;
+  xmlXPathContextPtr ctxt;
   ruby_xml_document_t *rdocp;
   ruby_xml_ns *rxns;
   VALUE rnode, rprefix, ruri, xxpc, xpath, xpath_expr;
@@ -94,7 +94,7 @@ ruby_xml_xpath_find(int argc, VALUE *argv, VALUE class) {
      * after the XPathContext object has been setup */
   case 2:
     if (rb_obj_is_kind_of(argv[0], cXMLDocument) == Qtrue) {
-      xxpc = ruby_xml_xpath_context_new3(argv[0]);
+      xxpc = ruby_xml_xpath_context_new(argv[0]);
       Data_Get_Struct(argv[0], ruby_xml_document_t, rdocp);
 #ifdef DEBUG
       fprintf(stderr,"rdocp=0x%x root=0x%x\n",rdocp,xmlDocGetRootElement(rdocp->doc));
@@ -105,7 +105,7 @@ ruby_xml_xpath_find(int argc, VALUE *argv, VALUE class) {
 #endif
       Data_Get_Struct(rnode, ruby_xml_node, node);
     } else if ( rb_obj_is_kind_of(argv[0], cXMLNode) == Qtrue) {
-      xxpc = ruby_xml_xpath_context_new4(argv[0]);
+      xxpc = ruby_xml_xpath_context_new(argv[0]);
       Data_Get_Struct(argv[0], ruby_xml_node, node);
     } else
       rb_raise(rb_eTypeError, "arg 1 must be XML::Document or XML::Node within a document %s", rb_obj_as_string(argv[0]));
@@ -119,21 +119,22 @@ ruby_xml_xpath_find(int argc, VALUE *argv, VALUE class) {
   if (NIL_P(xxpc))
     return(Qnil);
 
-  Data_Get_Struct(xxpc,ruby_xml_xpath_context,rxxpc);
-  rxxpc->ctxt->node = node->node;
+  Data_Get_Struct(xxpc,xmlXPathContext,ctxt);
+  // XXX Is this legal? Set a subtree to apply xpath?
+  ctxt->node = node->node;
 
   // XXX is setting ->namespaces used?
   if (node->node->type == XML_DOCUMENT_NODE) {
-    rxxpc->ctxt->namespaces = xmlGetNsList(node->node->doc,
-					   xmlDocGetRootElement(node->node->doc));
+    ctxt->namespaces = xmlGetNsList(node->node->doc,
+				    xmlDocGetRootElement(node->node->doc));
   } else {
-    rxxpc->ctxt->namespaces = xmlGetNsList(node->node->doc, node->node);
+    ctxt->namespaces = xmlGetNsList(node->node->doc, node->node);
   }
 
-  rxxpc->ctxt->nsNr = 0;
-  if (rxxpc->ctxt->namespaces != NULL) {
-    while (rxxpc->ctxt->namespaces[rxxpc->ctxt->nsNr] != NULL)
-      rxxpc->ctxt->nsNr++;
+  ctxt->nsNr = 0;
+  if (ctxt->namespaces != NULL) {
+    while (ctxt->namespaces[ctxt->nsNr] != NULL)
+      ctxt->nsNr++;
   }
 
   /* Need to loop through the 2nd argument and iterate through the
@@ -203,11 +204,8 @@ ruby_xml_xpath_find(int argc, VALUE *argv, VALUE class) {
     rb_raise(eXMLXPathInvalidPath,
 	     "Invalid XPath expression (expr does not compile)");
   }
-  rxpop = ruby_xml_xpath_object_wrap(xmlXPathCompiledEval(comp, rxxpc->ctxt));
+  rxpop = ruby_xml_xpath_object_wrap(xmlXPathCompiledEval(comp, ctxt));
   xmlXPathFreeCompExpr(comp);
-
-  if (rxxpc->ctxt->namespaces != NULL)
-    xmlFree(rxxpc->ctxt->namespaces);
 
   if (rxpop == Qnil)
     rb_raise(eXMLXPathInvalidPath,

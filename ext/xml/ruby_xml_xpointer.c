@@ -12,7 +12,7 @@ VALUE
 ruby_xml_xpointer_point(VALUE class, VALUE rnode, VALUE xptr_str) {
 #ifdef LIBXML_XPTR_ENABLED
   ruby_xml_node *node;
-  ruby_xml_xpath_context *xxpc;
+  xmlXPathContextPtr ctxt;
   VALUE rxptr_xpth_ctxt, rxxp;
   xmlXPathObjectPtr xpath;
 
@@ -22,14 +22,13 @@ ruby_xml_xpointer_point(VALUE class, VALUE rnode, VALUE xptr_str) {
 
   Data_Get_Struct(rnode, ruby_xml_node, node);
 
-  rxptr_xpth_ctxt = ruby_xml_xpath_context_new(cXMLXPathContext,
-					       ruby_xml_document_wrap(cXMLDocument,node->node->doc),
-					       xmlXPtrNewContext(node->node->doc, node->node, NULL));
+  rxptr_xpth_ctxt =
+    ruby_xml_xpath_context_wrap(ctxt=xmlXPtrNewContext(node->node->doc, node->node, NULL));
+
   if (NIL_P(rxptr_xpth_ctxt))
     return(Qnil);
-  Data_Get_Struct(rxptr_xpth_ctxt, ruby_xml_xpath_context, xxpc);
 
-  xpath = xmlXPtrEval((xmlChar*)StringValuePtr(xptr_str), xxpc->ctxt);
+  xpath = xmlXPtrEval((xmlChar*)StringValuePtr(xptr_str), ctxt);
   if (xpath == NULL)
     rb_raise(eXMLXPointerInvalidExpression, "invalid xpointer expression");
 

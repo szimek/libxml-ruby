@@ -544,6 +544,11 @@ ruby_xml_document_wrap(VALUE class, xmlDocPtr xnode) {
 }
 
 VALUE
+ruby_xml_document_wrap2(xmlDocPtr xnode) {
+  return ruby_xml_document_wrap(cXMLDocument,xnode);
+}
+
+VALUE
 ruby_xml_document_new_native(VALUE class, VALUE xmlver) {
   xmlDocPtr rx;
 

@@ -8,25 +8,28 @@
 VALUE cXMLAttr;
 
 void ruby_xml_attr_free(ruby_xml_attr_t *rx) {
-  if (rx->attr == NULL ) return;
+  if (rx == NULL ) return;
 
-  if (rx->attr->parent == NULL && rx->attr->doc == NULL ) {
-#ifdef NODE_DEBUG
-    fprintf(stderr,"free rxn=0x%x xn=0x%x o=0x%x\n",(long)rxn,(long)rxn->node,(long)rxn->node->_private);
-#endif
+  if (rx->attr != NULL ) {
     rx->attr->_private=NULL;
-    xmlFreeProp(rx->attr);
+    if (rx->attr->parent == NULL && rx->attr->doc == NULL ) {
+#ifdef NODE_DEBUG
+      fprintf(stderr,"free rxn=0x%x xn=0x%x o=0x%x\n",(long)rxn,(long)rxn->node,(long)rxn->node->_private);
+#endif
+      xmlFreeProp(rx->attr);
+    }
+
+    rx->attr=NULL;
   }
 
-  rx->attr=NULL;
-  //  fprintf(stderr,"%0x ",(long)rxn);
   free(rx);
 }
 
 void
 ruby_xml_attr_mark(ruby_xml_attr_t *rx) {
   xmlNodePtr node;
-  if (rx->attr == NULL ) return;
+  if ( rx == NULL ) return;
+  if ( rx->attr == NULL ) return;
 
   if (rx->attr->_private == NULL ) {
     rb_warning("XmlAttr is not bound! (%s:%d)",
@@ -34,30 +37,7 @@ ruby_xml_attr_mark(ruby_xml_attr_t *rx) {
     return;
   }
 
-  if (rx->attr->doc != NULL ) {
-    if (rx->attr->doc->_private == NULL )
-      rb_warning("XmlAttr Doc is not bound! (%s:%d)",
-		 __FILE__,__LINE__);
-    else {
-      rb_gc_mark((VALUE)rx->attr->doc->_private);
-#ifdef NODE_DEBUG
-      fprintf(stderr,"mark rx=0x%x xn=0x%x o=0x%x\n",(long)rx,(long)rx->attr,(long)rx->attr->_private);
-#endif
-    }
-  } else if (rx->attr->parent != NULL ) {
-    if (rx->attr->parent->_private == NULL )
-      rb_warning("XmlAttr Parent is not bound! (%s:%d)",
-		 __FILE__,__LINE__);
-    node=rx->attr->parent;
-    while (node->parent != NULL )
-      node=node->parent;
-    if (node->_private != NULL) {
-      rb_gc_mark((VALUE)node->_private);
-#ifdef NODE_DEBUG
-      fprintf(stderr,"mark rx=0x%x xn=0x%x o=0x%x\n",(long)0,(long)node,(long)node->_private);
-#endif
-    }
-  }
+  ruby_xml_node_mark_common(rx->attr);
 }
 
 VALUE

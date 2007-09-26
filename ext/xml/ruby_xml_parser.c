@@ -1,5 +1,4 @@
 /* $Id$ */
-/* $Id$ */
 
 /* Please see the LICENSE file for copyright and distribution information */
 
@@ -9,7 +8,6 @@
 static VALUE libxml_xmlRubyErrorProc = Qnil;
 static int id_call;
 
-int ruby_xml_parser_count = 0;
 VALUE cXMLParser;
 VALUE eXMLParserParseError;
 
@@ -798,10 +796,6 @@ void
 ruby_xml_parser_free(ruby_xml_parser *rxp) {
   void *data;
 
-  ruby_xml_parser_count--;
-  if (ruby_xml_parser_count == 0)
-    xmlCleanupParser();
-
   switch(rxp->data_type) {
   case RUBY_LIBXML_SRC_TYPE_NULL:
     break;
@@ -940,6 +934,8 @@ ruby_xml_parser_mark(ruby_xml_parser *rxp) {
   if (rxp == NULL) return;
   if (!NIL_P(rxp->ctxt)) rb_gc_mark(rxp->ctxt);
 
+  ruby_xml_state_marker();
+
   switch(rxp->data_type) {
   case RUBY_LIBXML_SRC_TYPE_NULL:
     break;
@@ -1008,7 +1004,6 @@ VALUE
 ruby_xml_parser_new(VALUE class) {
   ruby_xml_parser *rxp;
 
-  ruby_xml_parser_count++;
   rxp = ALLOC(ruby_xml_parser);
   rxp->ctxt = Qnil;
   rxp->data_type = RUBY_LIBXML_SRC_TYPE_NULL;

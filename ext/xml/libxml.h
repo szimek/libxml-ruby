@@ -64,6 +64,7 @@ typedef struct rx_xpath_data {
   VALUE ctxt;
 } rx_xpath_data;
 
+#include "ruby_xml_state.h"
 #include "ruby_xml_attr.h"
 #include "ruby_xml_document.h"
 #include "ruby_xml_node.h"

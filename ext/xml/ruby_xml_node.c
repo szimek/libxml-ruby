@@ -1249,23 +1249,49 @@ ruby_xml_node_namespace_q(VALUE self) {
 void
 ruby_xml_node2_free(ruby_xml_node *rxn) {
 
-  if (rxn->node == NULL ) return;
+  if (rxn == NULL ) return;
 
-  if (rxn->node->parent == NULL && rxn->node->doc == NULL ) {
-#ifdef NODE_DEBUG
-    fprintf(stderr,"ruby_xml_node2_free freed rxn=0x%x xn=0x%x o=0x%x\n",(long)rxn,(long)rxn->node,(long)rxn->node->_private);
-#endif
+  if (rxn->node != NULL ) {
     rxn->node->_private=NULL;
-    xmlFreeNode(rxn->node);
-  } else {
+
+    if ( rxn->node->doc==NULL && rxn->node->parent==NULL ) {
 #ifdef NODE_DEBUG
-    fprintf(stderr,"ruby_xml_node2_free blanked %0x ",(long)rxn);
+      fprintf(stderr,"ruby_xml_node2_free free rxn=0x%x xn=0x%x o=0x%x\n",(long)rxn,(long)rxn->node,(long)rxn->node->_private);
 #endif
-    rxn->node->_private=NULL;
+      xmlFreeNode(rxn->node);
+    }
+    
+    rxn->node=NULL;
   }
 
-  rxn->node=NULL;
   free(rxn);
+}
+
+void
+ruby_xml_node_mark_common(xmlNodePtr node) {
+  if (node->parent == NULL ) {
+#ifdef NODE_DEBUG
+    fprintf(stderr,"mark no parent r=0x%x *n=0x%x\n",rxn,node);
+#endif
+  } else if ( node->doc != NULL ) {
+    if (node->doc->_private == NULL) {
+      rb_bug("XmlNode Doc is not bound! (%s:%d)",
+	     __FILE__,__LINE__);
+    }
+    rb_gc_mark((VALUE)node->doc->_private);
+  } else {
+    while (node->parent != NULL )
+      node=node->parent;
+    if (node->_private == NULL )
+      rb_warning("XmlNode Root Parent is not bound! (%s:%d)",
+		 __FILE__,__LINE__);
+    else {
+#ifdef NODE_DEBUG
+      fprintf(stderr,"mark rxn=0x%x xn=0x%x o=0x%x doc=0x%x\n",(long)rxn,(long)node,(long)node->_private,node->doc);
+#endif
+      rb_gc_mark((VALUE)node->_private);
+    }
+  }
 }
 
 void
@@ -1279,30 +1305,7 @@ ruby_xml_node2_mark(ruby_xml_node *rxn) {
     return;
   }
 
-  if (rxn->node->doc != NULL ) {
-    if (rxn->node->doc->_private == NULL )
-      rb_warning("XmlNode Doc is not bound! (%s:%d)",
-		 __FILE__,__LINE__);
-    else {
-      rb_gc_mark((VALUE)rxn->node->doc->_private);
-#ifdef NODE_DEBUG
-      fprintf(stderr,"mark rxn=0x%x xn=0x%x o=0x%x\n",(long)rxn,(long)rxn->node,(long)rxn->node->_private);
-#endif
-    }
-  } else if (rxn->node->parent != NULL ) {
-    if (rxn->node->parent->_private == NULL )
-      rb_warning("XmlNode Parent is not bound! (%s:%d)",
-		 __FILE__,__LINE__);
-    node=rxn->node;
-    while (node->parent != NULL )
-      node=node->parent;
-    if (node->_private != NULL) {
-      rb_gc_mark((VALUE)node->_private);
-#ifdef NODE_DEBUG
-      fprintf(stderr,"mark rxn=0x%x xn=0x%x o=0x%x\n",(long)0,(long)node,(long)node->_private);
-#endif
-    }
-  }
+  ruby_xml_node_mark_common(rxn->node);
 }
 
 VALUE
@@ -1314,9 +1317,8 @@ ruby_xml_node2_wrap(VALUE class, xmlNodePtr xnode)
   // This node is already wrapped
   if (xnode->_private != NULL) {
 #ifdef NODE_DEBUG
-    fprintf(stderr,"pre-wrap node 0x%x\n",xnode->_private);
     Data_Get_Struct((VALUE)xnode->_private,ruby_xml_node,rxn);
-    fprintf(stderr,"pre-wrap rxn=0x%x xn=0x%x o=0x%x\n",(long)rxn,(long)xnode,(long)xnode->_private);
+    fprintf(stderr,"re-wrap rn=0x%x n*=0x%x\n",(long)rxn,(long)xnode);
 #endif
     return (VALUE)xnode->_private;
   }
@@ -1327,7 +1329,8 @@ ruby_xml_node2_wrap(VALUE class, xmlNodePtr xnode)
   rxn->node=xnode;
   xnode->_private=(void*)obj;
 #ifdef NODE_DEBUG
-  fprintf(stderr,"wrap rxn=0x%x xn=0x%x o=0x%x\n",(long)rxn,(long)xnode,(long)obj);
+  fprintf(stderr,"wrap rn=0x%x n*=0x%x d*=0x%x\n",
+	  (long)rxn,(long)xnode,xnode->doc);
 #endif
   return obj;
 }
@@ -2222,6 +2225,15 @@ ruby_xml_node_registerNode(xmlNodePtr node)
   node->_private=NULL;
 }
 
+void
+ruby_xml_node_deregisterNode(xmlNodePtr node)
+{
+  ruby_xml_node *rxn;
+  if ( node->_private==NULL ) return;
+  Data_Get_Struct(node->_private, ruby_xml_node, rxn);
+  rxn->node=NULL;
+}
+
 // Rdoc needs to know 
 #ifdef RDOC_NEVER_DEFINED
   mXML = rb_define_module("XML");
@@ -2232,6 +2244,7 @@ ruby_init_xml_node(void) {
   VALUE singleton;
 
   xmlRegisterNodeDefault(ruby_xml_node_registerNode);
+  xmlDeregisterNodeDefault(ruby_xml_node_deregisterNode);
 
   cXMLNode = rb_define_class_under(mXML, "Node", rb_cObject);
   eXMLNodeSetNamespace = rb_define_class_under(cXMLNode, "SetNamespace", eXMLError);

@@ -415,13 +415,11 @@ ruby_xml_document_free(ruby_xml_document_t *rxd) {
 
   if (rxd->doc == NULL) return;
   rxd->doc->_private=NULL;
+#ifdef NODE_DEBUG
+  fprintf(stderr,"ruby_xml_document_free 0x%x/0x%x\n",rxd,rxd->doc);
+#endif
   xmlFreeDoc(rxd->doc);
-  ruby_xml_parser_count--;
   rxd->doc = NULL;
-
-  // All this should be replaced by VALUE objects that GC can work
-  if (ruby_xml_parser_count == 0)
-    xmlCleanupParser();
 
   switch(rxd->data_type) {
   case RUBY_LIBXML_SRC_TYPE_NULL:
@@ -449,6 +447,7 @@ void
 ruby_xml_document_mark(ruby_xml_document_t *rxd) {
   // will mark parsers and source types
   // I do not thing doc->parent has anything useful in it.
+  ruby_xml_state_marker();
 }
 
 /*
@@ -523,12 +522,6 @@ ruby_xml_document_wrap(VALUE class, xmlDocPtr xnode) {
   if (xnode->_private != NULL)
     return (VALUE)xnode->_private;
 
-  /*
-   * XXX This is bad and needs to be replaced with
-   * something that interacts with the GC. I did not do all this
-   * to have reference counting still around. -danj
-   */
-  ruby_xml_parser_count++;
   obj=Data_Make_Struct(class,ruby_xml_document_t,
 		       ruby_xml_document_mark,
 		       ruby_xml_document_free,rx);

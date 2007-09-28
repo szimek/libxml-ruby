@@ -393,19 +393,10 @@ ruby_xml_document_filename_get(VALUE self) {
  */
 VALUE
 ruby_xml_document_find(int argc, VALUE *argv, VALUE self) {
-  int i, vargc;
-  VALUE *vargv;
-
   if (argc > 2 || argc < 1)
     rb_raise(rb_eArgError, "wrong number of arguments (need 1 or 2)");
 
-  vargc = argc + 1;
-  vargv = ALLOC_N(VALUE, vargc + 1);
-  vargv[0]=self;
-  for (i = 0; i<argc; i++)
-    vargv[i + 1] = argv[i];
-
-  return(ruby_xml_xpath_find2(vargc, vargv));
+  return(ruby_xml_xpath_find2(self,argv[0],(argc==2)?argv[1]:Qnil));
 }
 
 

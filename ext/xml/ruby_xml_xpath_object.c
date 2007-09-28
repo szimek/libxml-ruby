@@ -36,15 +36,13 @@ ruby_xml_xpath_object_free(xmlXPathObjectPtr xpop)
 VALUE
 ruby_xml_xpath_object_wrap(xmlXPathObjectPtr xpop)
 {
-  VALUE r;
   if ( xpop==NULL )
     return Qnil;
 
-  r=Data_Wrap_Struct(cXMLXPathObject,
-		     ruby_xml_xpath_object_mark,
-		     ruby_xml_xpath_object_free,
-		     xpop);
-  return r;
+  return Data_Wrap_Struct(cXMLXPathObject,
+			  ruby_xml_xpath_object_mark,
+			  ruby_xml_xpath_object_free,
+			  xpop);
 }
 
 /*

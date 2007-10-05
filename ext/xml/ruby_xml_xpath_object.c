@@ -83,13 +83,15 @@ VALUE
 ruby_xml_xpath_object_set(VALUE self)
 {
   xmlXPathObjectPtr xpop;
+  VALUE r;
 
   Data_Get_Struct(self,xmlXPathObject,xpop);
+  r=Qnil;
 
   if (xpop->type == XPATH_NODESET)
-    return ruby_xml_node_set_new2(self);
+    r=ruby_xml_node_set_new2(self);
 
-  return Qnil;
+  return r;
 }
 
 /*

@@ -1003,15 +1003,20 @@ ruby_xml_parser_memory_used(VALUE self) {
 VALUE
 ruby_xml_parser_new(VALUE class) {
   ruby_xml_parser *rxp;
+  VALUE r;
 
-  rxp = ALLOC(ruby_xml_parser);
+  r=Data_Make_Struct(class,
+		     ruby_xml_parser,
+		     ruby_xml_parser_mark,
+		     ruby_xml_parser_free,
+		     rxp);
+
   rxp->ctxt = Qnil;
   rxp->data_type = RUBY_LIBXML_SRC_TYPE_NULL;
   rxp->data = NULL;
   rxp->parsed = 0;
 
-  return(Data_Wrap_Struct(class, ruby_xml_parser_mark,
-			  ruby_xml_parser_free, rxp));
+  return r;
 }
 
 

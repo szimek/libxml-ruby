@@ -12,13 +12,7 @@ ID id_state;
 
 void
 ruby_xml_state_free(int * dummy) {
-#ifdef DEBUG
-  fprintf(stderr,"freeval 0x%x\n",*dummy);
-#endif
   if ( dummy==NULL ) return;
-#ifdef DEBUG
-  fprintf(stderr,"freeing 0x%x\n",dummy);
-#endif
   xmlCleanupParser();
   free(dummy);
   dummy=NULL;
@@ -45,10 +39,7 @@ ruby_xml_state_object() {
 			   ruby_xml_state_free,
 			   dummy);
     rb_ivar_set(cXMLState,id_state,id=rb_obj_id(obj));
-    *dummy=NUM2INT(id);
-#ifdef DEBUG
-    fprintf(stderr,"created 0x%x\n",NUM2INT(id));
-#endif
+    *dummy=0;
     weak_holder=obj;
     return obj;
   }

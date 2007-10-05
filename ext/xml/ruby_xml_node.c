@@ -662,7 +662,7 @@ ruby_xml_node_find(int argc, VALUE *argv, VALUE self) {
  */
 VALUE
 ruby_xml_node_find_first(int argc, VALUE *argv, VALUE self) {
-  return ruby_xml_node_set_first(ruby_xml_node_find(argc, argv, self));
+  return ruby_xml_xpath_object_first(ruby_xml_node_find(argc, argv, self));
 }
 
 

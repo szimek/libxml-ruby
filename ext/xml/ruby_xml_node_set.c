@@ -24,9 +24,14 @@ VALUE cXMLNodeSet;
 VALUE
 ruby_xml_node_set_to_a(VALUE self) {
   ruby_xml_node_set *rxnset;
+  VALUE r;
 
   Data_Get_Struct(self, ruby_xml_node_set, rxnset);
-  return ruby_xml_xpath_object_to_a(rxnset->rxpop);
+  r=ruby_xml_xpath_object_to_a(rxnset->rxpop);
+#ifdef NODE_DEBUG
+  fprintf(stderr,"node_set_to_a %s\n",rb_str2cstr(rb_ary_to_s(r),0));
+#endif
+  return r;
 }
 
 

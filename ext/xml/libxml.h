@@ -77,6 +77,7 @@ typedef struct rx_xpath_data {
 #include "ruby_xml_xinclude.h"
 #include "ruby_xml_xpath.h"
 #include "ruby_xml_xpath_context.h"
+#include "ruby_xml_xpath_object.h"
 #include "ruby_xml_xpointer.h"
 #include "ruby_xml_xpointer_context.h"
 #include "ruby_xml_input_cbg.h"

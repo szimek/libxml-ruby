@@ -51,7 +51,7 @@ class TC_XML_Node < Test::Unit::TestCase
   end
 
   def test_libxml_node_find()
-    set = @root.find('./fixnum')
+    set = @root.find('./fixnum').set
     assert_instance_of(XML::Node::Set, set)
     for node in set
       assert_instance_of(XML::Node, node)

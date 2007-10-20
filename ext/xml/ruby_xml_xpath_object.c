@@ -18,7 +18,7 @@ ruby_xml_xpath_object_mark(xmlXPathObjectPtr xpop)
   void * xnp;
   int i;
 
-  if ( xpop->type == XPATH_NODESET ) {
+  if ( xpop->type == XPATH_NODESET && xpop->nodesetval != NULL ) {
     for (i=0; i<xpop->nodesetval->nodeNr; i++) {
       xnp=xpop->nodesetval->nodeTab[i]->_private;
       if (xnp != NULL)

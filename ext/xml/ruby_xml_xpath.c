@@ -173,6 +173,9 @@ ruby_xml_xpath_find(VALUE class, VALUE anode, VALUE xpath_expr, VALUE nslist) {
 	     "Invalid XPath expression (expr does not compile)");
   }
   xxpop=xmlXPathCompiledEval(comp, ctxt);
+  if ( xxpop == NULL )
+    return Qnil;
+
 #define ALT
 #ifdef ALT
   rxpop = ruby_xml_xpath_object_wrap(xxpop);
